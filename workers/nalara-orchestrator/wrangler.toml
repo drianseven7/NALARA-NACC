@@ -2,17 +2,10 @@ name = "nalara-orchestrator"
 main = "worker.js"
 compatibility_date = "2024-11-01"
 
-# Binding D1 — ganti database_id dengan ID database nalara-os-db Anda.
-# Dapatkan via: npx wrangler d1 info nalara-os-db
 [[d1_databases]]
 binding = "DB"
 database_name = "nalara-os-db"
-database_id = "GANTI_DENGAN_DATABASE_ID"
+database_id = "a9545f4b-db6b-4baa-9d35-87f2853a2f5f"
 
-# Secret (atur via: npx wrangler secret put ...)
-# OWNER_PASSWORD = <owner password>
-# JIMMY_URL (opsional) = https://jimmy-ai.adrianakbar0202.workers.dev
-
-# Cron Trigger — jalankan pipeline otomatis tiap 15 menit
 [triggers]
 crons = ["*/15 * * * *"]
