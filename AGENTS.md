@@ -9,6 +9,12 @@
 - Jimmy Worker: `https://jimmy-ai.adrianakbar0202.workers.dev`. Kontrak: `POST /auth` `{ownerPassword}` → `{success:true}`/`{success:false,error}`; `POST /` `{message,ownerPassword}` → balasan (cek `reply`/`message`/`response`/`content`/`text`).
 - Keduanya mengizinkan CORS dari WebView file:// (API pakai `*`; Jimmy echo origin).
 
+## NALARA Tasks Worker (baru)
+- Kode: `workers/nalara-tasks/worker.js` (Cloudflare Worker mandiri, belum di-deploy).
+- Deploy: buat Worker baru di Cloudflare → tempel kode → binding D1 `DB` → `nalara-os-db` → secret `OWNER_PASSWORD`.
+- Endpoint (auth `Authorization: Bearer <OWNER_PASSWORD>`, kecuali health): `GET/POST /api/tasks`, `PATCH/DELETE /api/tasks/:id`, `GET/POST /api/approvals`, `PATCH /api/approvals/:id`, `GET/POST /api/audit-logs`.
+- Skema tabel dibuat otomatis (`CREATE TABLE IF NOT EXISTS`): tasks(title,unit,priority,status,assignee), approvals(requester,subject,description,status,reviewed_by), audit_logs(type,detail).
+
 ## Keamanan (wajib)
 - JANGAN tanam GEMINI_API_KEY atau owner password di source code/APK.
 - Password owner hanya di `sessionStorage` (kunci `nalara_jimmy_session`), dibersihkan saat putus koneksi. Jangan pindah ke `localStorage`.
