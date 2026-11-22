@@ -17,3 +17,6 @@
 
 ## Status personel AI
 - Enum status: Planned / Configured / Connected / Active / Paused. Jangan tampilkan sebagai Active bila belum benar-benar terkoneksi (render via `statusBadge` di index.html).
+
+## Modul lain
+- Audit log lokal: key localStorage `nalara_audit_logs` (maks 100 entri), dirender di halaman Governance via `renderAuditLogs`; hook di koneksi Jimmy, tugas, dan penelusuran units/staff.

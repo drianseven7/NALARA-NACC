@@ -163,6 +163,30 @@ footer {text-align:center;color:#666;font-size:10px;padding:25px}
 .prio.sedang {background:#2a2314;color:#E6C15C;border:1px solid #453a1e}
 .prio.rendah {background:#14241c;color:#55D68B;border:1px solid #1f3a2c}
 
+/* Audit log */
+.log-entry {
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:11px 0;
+    border-bottom:1px solid var(--border);
+    font-size:12px;
+}
+.log-entry:last-child {border-bottom:0}
+.log-type {
+    flex-shrink:0;
+    background:#1d1d23;
+    border:1px solid var(--border);
+    color:var(--silver);
+    font-size:9px;
+    letter-spacing:1px;
+    padding:3px 8px;
+    border-radius:6px;
+    font-weight:bold;
+}
+.log-detail {flex:1;color:var(--white);word-break:break-word}
+.log-time {flex-shrink:0;color:#777;font-size:10px}
+
 /* Chat */
 .chat-window {
     background:var(--panel);
@@ -347,17 +371,28 @@ footer {text-align:center;color:#666;font-size:10px;padding:25px}
     <h1>Governance</h1>
     <p class="subtitle">Tata kelola perusahaan dan pengawasan internal.</p>
 
-    <div class="section-title">PENGAWASAN</div>
+    <div class="section-title">AUDIT LOGS</div>
     <div class="card">
-        <h3>Governance & Internal Oversight</h3>
-        <p>Fungsi pengawasan independen. Modul audit dan kontrol akses masih dalam pengembangan.</p>
-        <small>MODUL DIRENCANAKAN</small>
+        <h3>Aktivitas Tercatat <span class="muted" id="auditCount">0</span></h3>
+        <p>Pencatatan aktivitas nyata di dalam aplikasi (koneksi Jimmy, tugas, penelusuran data).</p>
+        <div id="auditList">
+            <p class="muted">Memuat log...</p>
+        </div>
+        <button class="danger full" onclick="clearAuditLogs()">Bersihkan Log</button>
     </div>
 
+    <div class="section-title">PERSETUJUAN</div>
     <div class="card">
-        <h3>Audit Logs</h3>
-        <p>Pencatatan aktivitas akan tersedia setelah modul audit diintegrasikan.</p>
-        <small>TABEL DATABASE DIBUAT</small>
+        <h3>Approval Workflow</h3>
+        <p>Tabel approvals tersedia di database NALARA (D1). Alur persetujuan aktif akan muncul di sini setelah endpoint aman diintegrasikan.</p>
+        <small>BELUM ADA PERMINTAAN PERSETUJUAN</small>
+    </div>
+
+    <div class="section-title">KONTROL AKSES</div>
+    <div class="card">
+        <h3>Role-Based Access Control</h3>
+        <p>Konteks sesi saat ini: <strong>Owner</strong>. RBAC granular untuk personel AI direncanakan.</p>
+        <small>OWNER · AKSES PENUH</small>
     </div>
 </section>
 
@@ -391,9 +426,10 @@ function showPage(page) {
     window.scrollTo(0,0);
 
     if(page === 'tasks') renderTasks();
-    if(page === 'units') renderUnits();
-    if(page === 'staff') renderStaff();
+    if(page === 'units') { renderUnits(); logAudit('view', 'Melihat Business Units'); }
+    if(page === 'staff') { renderStaff(); logAudit('view', 'Melihat AI Workforce'); }
     if(page === 'jimmy') initJimmyUI();
+    if(page === 'governance') renderAuditLogs();
 }
 
 function showDetail(name, description, status, backPage) {
@@ -585,6 +621,7 @@ function renderTasks() {
         checkbox.addEventListener('change', () => {
             tasks[index].done = checkbox.checked;
             saveTasks();
+            logAudit('task_done', tasks[index].title + (checkbox.checked ? ' selesai' : ' dibuka kembali'));
         });
 
         const content = document.createElement('div');
@@ -621,7 +658,79 @@ document.getElementById('taskForm').addEventListener('submit', function(e) {
     this.reset();
     document.getElementById('taskPriority').value = 'sedang';
     saveTasks();
+    logAudit('task_add', title);
 });
+
+/* GOVERNANCE - AUDIT LOG */
+const AUDIT_KEY = 'nalara_audit_logs';
+
+function getAuditLogs() {
+    try {
+        const a = JSON.parse(localStorage.getItem(AUDIT_KEY) || '[]');
+        return Array.isArray(a) ? a : [];
+    } catch(e) { return []; }
+}
+
+function logAudit(type, detail) {
+    const logs = getAuditLogs();
+    logs.unshift({ type, detail, time: Date.now() });
+    if(logs.length > 100) logs.length = 100;
+    try { localStorage.setItem(AUDIT_KEY, JSON.stringify(logs)); } catch(e) {}
+}
+
+function fmtTime(ts) {
+    const d = new Date(ts);
+    const pad = n => String(n).padStart(2,'0');
+    return pad(d.getDate()) + '/' + pad(d.getMonth()+1) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+
+function clearAuditLogs() {
+    try { localStorage.removeItem(AUDIT_KEY); } catch(e) {}
+    renderAuditLogs();
+}
+
+function renderAuditLogs() {
+    const list = document.getElementById('auditList');
+    if(!list) return;
+    const logs = getAuditLogs();
+    const countEl = document.getElementById('auditCount');
+    if(countEl) countEl.textContent = logs.length;
+
+    if(!logs.length) {
+        list.innerHTML = '<p class="muted">Belum ada aktivitas tercatat.</p>';
+        return;
+    }
+
+    list.innerHTML = '';
+
+    logs.forEach(log => {
+        const row = document.createElement('div');
+        row.className = 'log-entry';
+
+        const typeLabel = {
+            jimmy_connect:'JIMMY',
+            jimmy_disconnect:'JIMMY',
+            task_add:'TUGAS',
+            task_done:'TUGAS',
+            view:'LIHAT'
+        }[log.type] || 'AKSI';
+
+        const type = document.createElement('span');
+        type.className = 'log-type';
+        type.textContent = typeLabel;
+
+        const detail = document.createElement('span');
+        detail.className = 'log-detail';
+        detail.textContent = log.detail;
+
+        const time = document.createElement('span');
+        time.className = 'log-time';
+        time.textContent = fmtTime(log.time);
+
+        row.append(type, detail, time);
+        list.appendChild(row);
+    });
+}
 
 /* JIMMY INTEGRATION */
 const JIMMY_KEY = 'nalara_jimmy_session';
@@ -679,6 +788,7 @@ async function connectJimmy() {
             statusEl.className = 'auth-status status-online';
             initJimmyUI();
             addChatMessage('system', 'Terhubung ke Jimmy.');
+            logAudit('jimmy_connect', 'Sesi Jimmy terhubung');
         } else {
             statusEl.textContent = (data.error || 'Autentikasi gagal.') + ' Periksa owner password.';
             statusEl.className = 'auth-status status-error';
@@ -697,6 +807,7 @@ function disconnectJimmy() {
     const win = document.getElementById('chatWindow');
     win.innerHTML = '<div class="chat-hint">Hubungkan dulu untuk mulai percakapan dengan Jimmy.</div>';
     initJimmyUI();
+    logAudit('jimmy_disconnect', 'Sesi Jimmy diputuskan');
 }
 
 function addChatMessage(type, text) {
@@ -784,6 +895,7 @@ document.getElementById('chatForm').addEventListener('submit', async function(e)
 });
 
 renderTasks();
+renderAuditLogs();
 loadBackendData();
 </script>
 
