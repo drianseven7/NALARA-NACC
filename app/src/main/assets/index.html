@@ -380,6 +380,15 @@ footer {text-align:center;color:#666;font-size:10px;padding:25px}
         <div id="autopilotAlerts"></div>
     </div>
 
+    <div class="section-title">BERITA DIVISI SKEMA</div>
+    <div class="card">
+        <h3>Berita Otomatis — Divisi Skema</h3>
+        <p>Berita terkait divisi skema dikumpulkan otomatis setiap 15 menit dari Google News (via Worker Orchestrator).</p>
+        <div id="skemaNewsStatus" class="muted">Memuat berita...</div>
+        <div id="skemaNewsList"></div>
+        <button class="primary full" onclick="refreshSkemaNews()">Segarkan Berita</button>
+    </div>
+
     <div class="section-title">AUDIT LOGS</div>
     <div class="card">
         <h3>Aktivitas Tercatat <span class="muted" id="auditCount">0</span></h3>
@@ -438,7 +447,7 @@ function showPage(page) {
     if(page === 'units') { renderUnits(); logAudit('view', 'Melihat Business Units'); }
     if(page === 'staff') { renderStaff(); logAudit('view', 'Melihat AI Workforce'); }
     if(page === 'jimmy') initJimmyUI();
-    if(page === 'governance') { renderAuditLogs(); loadAutopilot(); }
+    if(page === 'governance') { renderAuditLogs(); loadAutopilot(); loadSkemaNews(); }
 }
 
 function showDetail(name, description, status, backPage) {
@@ -831,6 +840,64 @@ function fmtDate(ts) {
     if (isNaN(d.getTime())) return String(ts);
     const pad = n => String(n).padStart(2, '0');
     return pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+
+/* BERITA DIVISI SKEMA */
+async function loadSkemaNews() {
+    const statusEl = document.getElementById('skemaNewsStatus');
+    const listEl = document.getElementById('skemaNewsList');
+    if (!statusEl || !listEl) return;
+
+    if (!TASKS_API_BASE) {
+        statusEl.innerHTML = '<p class="muted">Worker API Tugas belum di-deploy / URL belum disetel.</p>';
+        return;
+    }
+
+    const pwd = getJimmyPassword();
+    if (!pwd) {
+        statusEl.innerHTML = '<p class="muted">Hubungkan sesi Jimmy dulu untuk membaca berita skema.</p>';
+        return;
+    }
+
+    statusEl.innerHTML = '<p class="muted">Memuat berita divisi skema...</p>';
+
+    try {
+        const headers = { 'Authorization': 'Bearer ' + pwd };
+        const res = await fetch(TASKS_API_BASE + '/api/news?division=skema&limit=10', { headers });
+        const data = await res.json();
+
+        if (!data.success) {
+            statusEl.innerHTML = '<p class="muted status-error">Gagal memuat berita: ' + (data.error || '') + '</p>';
+            return;
+        }
+
+        const news = data.data || [];
+        statusEl.innerHTML = '<small class="muted">Berita divisi skema: ' + news.length + ' item</small>';
+
+        listEl.innerHTML = '';
+        if (news.length) {
+            news.forEach(n => {
+                const row = document.createElement('div');
+                row.className = 'log-entry';
+                const d = document.createElement('div');
+                d.className = 'log-detail';
+                d.innerHTML = '<strong>' + (n.title || '') + '</strong>' + (n.source ? ' <small class="muted">· ' + n.source + '</small>' : '') + (n.published_at ? ' <small class="muted">· ' + fmtDate(n.published_at) + '</small>' : '');
+                const u = document.createElement('div');
+                u.className = 'log-time';
+                u.innerHTML = n.url ? '<a href="' + n.url + '" target="_blank" rel="noopener">Baca selengkapnya →</a>' : '';
+                row.append(d, u);
+                listEl.appendChild(row);
+            });
+        } else {
+            listEl.innerHTML = '<p class="muted">Belum ada berita divisi skema.</p>';
+        }
+    } catch (e) {
+        statusEl.innerHTML = '<p class="muted status-error">Gagal memuat berita: ' + e.message + '</p>';
+    }
+}
+
+async function refreshSkemaNews() {
+    loadSkemaNews();
 }
 
 /* JIMMY INTEGRATION */

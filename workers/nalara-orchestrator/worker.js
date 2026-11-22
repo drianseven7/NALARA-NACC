@@ -52,7 +52,8 @@ async function runPipeline(env) {
   const processed = await processTasks(env);
   const report = await generateReport(env);
   const alerts = await monitor(env);
-  return { processed, report, alerts };
+  const news = await fetchSkemaNews(env);
+  return { processed, report, alerts, news };
 }
 
 // ---- Proses tugas ----
@@ -156,6 +157,48 @@ async function monitor(env) {
   }
 
   return alertsAdded;
+}
+
+// ---- Pencarian berita divisi Skema (otomatis) ----
+async function fetchSkemaNews(env) {
+  let added = 0;
+  try {
+    // Google News RSS untuk kata kunci "skema" di Indonesia
+    const rssUrl = 'https://news.google.com/rss/search?q=skema+NALARA+OR+skema+bisnis+OR+divisi+skema&hl=id-ID&gl=ID&ceid=ID:id';
+    const res = await fetch(rssUrl);
+    const xml = await res.text();
+
+    // Parsing sederhana item RSS
+    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+    let match;
+    while ((match = itemRegex.exec(xml)) !== null) {
+      const item = match[1];
+      const titleMatch = item.match(/<title>([\s\S]*?)<\/title>/);
+      const linkMatch = item.match(/<link>([\s\S]*?)<\/link>/);
+      const pubDateMatch = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/);
+      const sourceMatch = item.match(/<source[^>]*>([\s\S]*?)<\/source>/);
+
+      const title = titleMatch ? titleMatch[1].trim() : '';
+      const urlNews = linkMatch ? linkMatch[1].trim() : '';
+      const publishedAt = pubDateMatch ? pubDateMatch[1].trim() : '';
+      const source = sourceMatch ? sourceMatch[1].trim() : 'Google News';
+
+      if (!title || !urlNews) continue;
+
+      // Cek duplikat berdasarkan judul
+      const exists = await env.DB.prepare('SELECT id FROM news WHERE title = ? AND division = ?').bind(title, 'skema').first();
+      if (exists) continue;
+
+      await env.DB.prepare(
+        'INSERT INTO news (title, source, url, summary, published_at, division) VALUES (?, ?, ?, ?, ?, ?)'
+      ).bind(title, source, urlNews, '', publishedAt, 'skema').run();
+      await appendAudit(env, 'auto_news', 'Berita skema baru: ' + title);
+      added++;
+    }
+  } catch (e) {
+    await appendAudit(env, 'auto_error', 'Gagal ambil berita skema: ' + e.message);
+  }
+  return added;
 }
 
 // ---- Helper ----

@@ -176,6 +176,40 @@ export default {
         return json({ success: true, data: results }, corsHeaders);
       }
 
+      // ---- NEWS (Divisi Skema) ----
+      if (path === '/api/news' && method === 'GET') {
+        const division = url.searchParams.get('division') || 'skema';
+        const limit = Math.min(parseInt(url.searchParams.get('limit') || '20'), 100);
+        const { results } = await env.DB.prepare(
+          'SELECT * FROM news WHERE division = ? ORDER BY published_at DESC, id DESC LIMIT ?'
+        ).bind(division, limit).all();
+        return json({ success: true, data: results, division }, corsHeaders);
+      }
+
+      if (path === '/api/news' && method === 'POST') {
+        const body = await request.json();
+        const title = (body.title || '').trim();
+        if (!title) return json({ success: false, error: 'Judul berita wajib diisi.' }, corsHeaders, 400);
+        const source = (body.source || '').trim();
+        const urlNews = (body.url || '').trim();
+        const summary = (body.summary || '').trim();
+        const publishedAt = (body.published_at || '').trim();
+        const division = (body.division || 'skema').trim();
+        const { meta } = await env.DB.prepare(
+          'INSERT INTO news (title, source, url, summary, published_at, division) VALUES (?, ?, ?, ?, ?, ?)'
+        ).bind(title, source, urlNews, summary, publishedAt, division).run();
+        const { results } = await env.DB.prepare('SELECT * FROM news WHERE id = ?').bind(meta.last_row_id).all();
+        return json({ success: true, data: results[0] || null }, corsHeaders, 201);
+      }
+
+      const newsMatch = path.match(/^\/api\/news\/(\d+)$/);
+      if (newsMatch && method === 'DELETE') {
+        const id = Number(newsMatch[1]);
+        const { meta } = await env.DB.prepare('DELETE FROM news WHERE id = ?').bind(id).run();
+        if (!meta.changes) return json({ success: false, error: 'Berita tidak ditemukan.' }, corsHeaders, 404);
+        return json({ success: true }, corsHeaders);
+      }
+
       return json({ success: false, error: 'Endpoint tidak ditemukan.' }, corsHeaders, 404);
     } catch (e) {
       return json({ success: false, error: 'Kesalahan server: ' + e.message }, corsHeaders, 500);
@@ -234,6 +268,19 @@ async function ensureTables(env) {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       severity TEXT DEFAULT 'info',
       message TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now'))
+    )`
+  ).run();
+
+  await env.DB.prepare(
+    `CREATE TABLE IF NOT EXISTS news (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      source TEXT DEFAULT '',
+      url TEXT DEFAULT '',
+      summary TEXT DEFAULT '',
+      published_at TEXT DEFAULT '',
+      division TEXT DEFAULT 'skema',
       created_at TEXT DEFAULT (datetime('now'))
     )`
   ).run();
