@@ -16,7 +16,7 @@
 - Secret: `OWNER_PASSWORD` (di-set via wrangler)
 - Endpoint (auth `Authorization: Bearer <OWNER_PASSWORD>`, kecuali health): `GET/POST /api/tasks`, `PATCH/DELETE /api/tasks/:id`, `GET/POST /api/approvals`, `PATCH /api/approvals/:id`, `GET/POST /api/audit-logs`, `GET /api/reports`, `GET /api/alerts`
 - Skema tabel otomatis: tasks, approvals, audit_logs, reports, alerts, **news** (title, source, url, summary, published_at, division, created_at)
-- Endpoint baru: `GET/POST /api/news?division=skema`, `DELETE /api/news/:id`
+- Endpoint baru: `GET /api/news?division=skema` (publik, tanpa auth), `POST /api/news` dan `DELETE /api/news/:id` (butuh auth `OWNER_PASSWORD`)
 
 ## NALARA Orchestrator Worker (DI-DEPLOY, automasi)
 - URL: `https://nalara-orchestrator.adrianakbar0202.workers.dev`
