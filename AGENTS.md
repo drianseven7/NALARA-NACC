@@ -15,7 +15,8 @@
 - Binding D1: `DB` → `nalara-os-db`
 - Secret: `OWNER_PASSWORD` (di-set via wrangler)
 - Endpoint (auth `Authorization: Bearer <OWNER_PASSWORD>`, kecuali health): `GET/POST /api/tasks`, `PATCH/DELETE /api/tasks/:id`, `GET/POST /api/approvals`, `PATCH /api/approvals/:id`, `GET/POST /api/audit-logs`, `GET /api/reports`, `GET /api/alerts`
-- Skema tabel otomatis: tasks, approvals, audit_logs, reports, alerts
+- Skema tabel otomatis: tasks, approvals, audit_logs, reports, alerts, **news** (title, source, url, summary, published_at, division, created_at)
+- Endpoint baru: `GET/POST /api/news?division=skema`, `DELETE /api/news/:id`
 
 ## NALARA Orchestrator Worker (DI-DEPLOY, automasi)
 - URL: `https://nalara-orchestrator.adrianakbar0202.workers.dev`
@@ -24,8 +25,8 @@
 - Secret: `OWNER_PASSWORD`, `JIMMY_URL` = `https://jimmy-ai.adrianakbar0202.workers.dev`
 - Cron Trigger: `*/15 * * * *` (tiap 15 menit) → memanggil `/__cron`
 - Manual: `GET /run` dengan auth `Bearer <OWNER_PASSWORD>`
-- Pipeline: proses tugas pending ber-assignee via Jimmy/Gemini → simpan `result` & status done; laporan harian ke `reports`; peringatan ke `alerts`
-- App: halaman Governance menampilkan Auto-pilot; `TASKS_API_BASE` di index.html sudah di-set ke URL Tasks Worker
+- Pipeline: proses tugas pending ber-assignee via Jimmy/Gemini → simpan `result` & status done; laporan harian ke `reports`; peringatan ke `alerts`; **pencarian berita divisi skema otomatis via Google News RSS setiap 15 menit → simpan ke tabel `news`**
+- App: halaman Governance menampilkan Auto-pilot + Berita Divisi Skema; `TASKS_API_BASE` di index.html sudah di-set ke URL Tasks Worker
 
 ## Keamanan (wajib)
 - JANGAN tanam GEMINI_API_KEY atau owner password di source code/APK.
