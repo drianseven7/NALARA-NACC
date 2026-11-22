@@ -853,17 +853,10 @@ async function loadSkemaNews() {
         return;
     }
 
-    const pwd = getJimmyPassword();
-    if (!pwd) {
-        statusEl.innerHTML = '<p class="muted">Hubungkan sesi Jimmy dulu untuk membaca berita skema.</p>';
-        return;
-    }
-
     statusEl.innerHTML = '<p class="muted">Memuat berita divisi skema...</p>';
 
     try {
-        const headers = { 'Authorization': 'Bearer ' + pwd };
-        const res = await fetch(TASKS_API_BASE + '/api/news?division=skema&limit=10', { headers });
+        const res = await fetch(TASKS_API_BASE + '/api/news?division=skema&limit=10');
         const data = await res.json();
 
         if (!data.success) {

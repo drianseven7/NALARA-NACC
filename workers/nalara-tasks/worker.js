@@ -40,6 +40,17 @@ export default {
       );
     }
 
+    // Berita divisi skema publik (baca tanpa autentikasi)
+    if (path === '/api/news' && method === 'GET') {
+      await ensureTables(env);
+      const division = url.searchParams.get('division') || 'skema';
+      const limit = Math.min(parseInt(url.searchParams.get('limit') || '10', 10), 50);
+      const { results } = await env.DB.prepare(
+        'SELECT * FROM news WHERE division = ? ORDER BY created_at DESC LIMIT ?'
+      ).bind(division, limit).all();
+      return json({ success: true, data: results || [], division }, corsHeaders);
+    }
+
     // Autentikasi untuk semua endpoint lain
     const authHeader = request.headers.get('Authorization') || '';
     const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
