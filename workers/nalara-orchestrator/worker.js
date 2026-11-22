@@ -1,21 +1,15 @@
 /**
- * NALARA OS — Orchestrator Worker
+ * NALARA OS — Orchestrator Worker (Agen Bertindak)
  * ---------------------------------------------------
  * Sistem orkestrasi otomatis untuk Jimmy & agen AI:
- *   - Memproses tugas (status pending) yang punya assignee
+ *   - Menugaskan tugas baru ke agen yang tepat (Angelia / Team Research)
+ *   - Mengeksekusi tugas via Jimmy/Gemini → simpan hasil & status done
  *   - Membuat laporan harian
  *   - Memantau tugas terlambat & unit nonaktif
+ *   - Mengambil berita divisi skema dengan gambar dari Google News RSS
  *
- * Dipicu oleh Cloudflare Cron Trigger pada rute /__cron.
+ * Dipicu oleh Cloudflare Cron Trigger pada rute /__cron (tiap 15 menit).
  * Manual trigger (dengan auth): GET /run
- *
- * Deploy:
- *   1. Create Worker baru -> tempel kode ini -> Deploy
- *   2. Binding D1 `DB` -> `nalara-os-db`
- *   3. Secret `OWNER_PASSWORD` (dipakai untuk auth ke Jimmy)
- *   4. Secret `JIMMY_URL` (opsional; default URL Jimmy)
- *   5. Settings -> Triggers -> Cron Triggers: tambah jadwal
- *      (mis. tiap 15 menit)
  *
  * Semua eksekusi nyata lewat API Jimmy/Gemini — tidak ada simulasi.
  */
@@ -49,14 +43,62 @@ export default {
 };
 
 async function runPipeline(env) {
+  const assigned = await assignTasks(env);
   const processed = await processTasks(env);
   const report = await generateReport(env);
   const alerts = await monitor(env);
   const news = await fetchSkemaNews(env);
-  return { processed, report, alerts, news };
+  return { assigned, processed, report, alerts, news };
 }
 
-// ---- Proses tugas ----
+// ---- 1. Tugaskan tugas baru ke agen yang tepat ----
+async function assignTasks(env) {
+  const LIMIT = 5;
+  const { results } = await env.DB.prepare(
+    `SELECT * FROM tasks WHERE status = 'pending' AND (assignee IS NULL OR assignee = '') ORDER BY id ASC LIMIT ?`
+  ).bind(LIMIT).all();
+
+  let assigned = 0;
+  for (const task of results) {
+    try {
+      const prompt = buildAssignmentPrompt(task);
+      const data = await callJimmy(env, prompt);
+      const output = extractReply(data).trim().toLowerCase();
+
+      let assignee = 'Angelia'; // default
+      if (output.includes('research') || output.includes('team research') || output.includes('riset')) {
+        assignee = 'Team Research';
+      } else if (output.includes('angelia') || output.includes('administrasi') || output.includes('admin')) {
+        assignee = 'Angelia';
+      }
+
+      await env.DB.prepare(
+        `UPDATE tasks SET assignee = ? WHERE id = ?`
+      ).bind(assignee, task.id).run();
+      await appendAudit(env, 'auto_assign', 'Tugas #' + task.id + ' ("' + task.title + '") ditugaskan ke ' + assignee);
+      assigned++;
+    } catch (e) {
+      await appendAudit(env, 'auto_error', 'Gagal tugaskan tugas #' + task.id + ': ' + e.message);
+    }
+  }
+  return assigned;
+}
+
+function buildAssignmentPrompt(task) {
+  return (
+    'Anda adalah Chief of Staff AI NALARA GROUP. Tugas berikut belum ditugaskan ke siapa. ' +
+    'Tentukan agen AI yang paling tepat untuk menyelesaikannya, pilih SATU dari dua opsi:\n' +
+    '1. Angelia — Corporate Secretary (administrasi, korespondensi, dokumen, rapat, keuangan umum)\n' +
+    '2. Team Research — Research Officer (riset, analisis data, survei, tren, berita, laporan riset)\n\n' +
+    'Tugas: ' + task.title + '\n' +
+    'Deskripsi: ' + (task.description || '(tidak ada)') + '\n' +
+    'Unit: ' + (task.unit || 'Umum') + '\n' +
+    'Prioritas: ' + task.priority + '\n\n' +
+    'Jawab hanya dengan nama agen: "Angelia" atau "Team Research". Tambahkan alasan singkat jika perlu.'
+  );
+}
+
+// ---- 2. Eksekusi tugas yang sudah ditugaskan ----
 async function processTasks(env) {
   const LIMIT = 5;
   const { results } = await env.DB.prepare(
@@ -73,7 +115,7 @@ async function processTasks(env) {
       await env.DB.prepare(
         `UPDATE tasks SET result = ?, status = 'done', last_processed_at = ? WHERE id = ?`
       ).bind(output, ts, task.id).run();
-      await appendAudit(env, 'auto_task', 'Tugas #' + task.id + ' ("' + task.title + '") diproses otomatis');
+      await appendAudit(env, 'auto_task', 'Tugas #' + task.id + ' ("' + task.title + '") dieksekusi oleh ' + task.assignee);
       processed++;
     } catch (e) {
       await appendAudit(env, 'auto_error', 'Gagal proses tugas #' + task.id + ': ' + e.message);
@@ -84,17 +126,17 @@ async function processTasks(env) {
 
 function buildTaskPrompt(task) {
   return (
-    'Anda adalah Chief of Staff AI NALARA GROUP. Kerjakan tugas berikut secara mandiri dan berikan hasil akhirnya (output siap pakai):\n' +
+    'Anda adalah ' + task.assignee + ', personel AI NALARA GROUP. Kerjakan tugas berikut secara mandiri dan berikan hasil akhirnya (output siap pakai):\n' +
     'Tugas: ' + task.title + '\n' +
+    'Deskripsi: ' + (task.description || '(tidak ada)') + '\n' +
     'Unit: ' + (task.unit || 'Umum') + '\n' +
     'Prioritas: ' + task.priority + '\n' +
-    'Ditugaskan kepada: ' + task.assignee + '\n' +
     'Batas waktu: ' + (task.due_date || 'tidak ada') + '\n' +
     'Berikan hasil konkret (mis. draf konten, ringkasan, atau langkah eksekusi).'
   );
 }
 
-// ---- Laporan harian ----
+// ---- 3. Laporan harian ----
 async function generateReport(env) {
   const today = todayStr();
   const existing = await env.DB.prepare('SELECT id FROM reports WHERE period = ?').bind(today).first();
@@ -125,7 +167,7 @@ async function generateReport(env) {
   }
 }
 
-// ---- Pemantauan ----
+// ---- 4. Pemantauan ----
 async function monitor(env) {
   let alertsAdded = 0;
   const today = todayStr();
@@ -159,16 +201,14 @@ async function monitor(env) {
   return alertsAdded;
 }
 
-// ---- Pencarian berita divisi Skema (otomatis) ----
+// ---- 5. Pencarian berita divisi Skema dengan gambar (otomatis) ----
 async function fetchSkemaNews(env) {
   let added = 0;
   try {
-    // Google News RSS untuk kata kunci "skema" di Indonesia
     const rssUrl = 'https://news.google.com/rss/search?q=skema+NALARA+OR+skema+bisnis+OR+divisi+skema&hl=id-ID&gl=ID&ceid=ID:id';
     const res = await fetch(rssUrl);
     const xml = await res.text();
 
-    // Parsing sederhana item RSS
     const itemRegex = /<item>([\s\S]*?)<\/item>/g;
     let match;
     while ((match = itemRegex.exec(xml)) !== null) {
@@ -177,21 +217,24 @@ async function fetchSkemaNews(env) {
       const linkMatch = item.match(/<link>([\s\S]*?)<\/link>/);
       const pubDateMatch = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/);
       const sourceMatch = item.match(/<source[^>]*>([\s\S]*?)<\/source>/);
+      // Gambar ilustrasi dari media:thumbnail atau enclosure
+      const thumbMatch = item.match(/<media:thumbnail[^>]*url="([^"]*)"/i);
+      const encMatch = item.match(/<enclosure[^>]*url="([^"]*)"[^>]*type="image\/[^"]*"/i);
 
       const title = titleMatch ? titleMatch[1].trim() : '';
       const urlNews = linkMatch ? linkMatch[1].trim() : '';
       const publishedAt = pubDateMatch ? pubDateMatch[1].trim() : '';
       const source = sourceMatch ? sourceMatch[1].trim() : 'Google News';
+      const imageUrl = (thumbMatch ? thumbMatch[1] : (encMatch ? encMatch[1] : '')).trim();
 
       if (!title || !urlNews) continue;
 
-      // Cek duplikat berdasarkan judul
       const exists = await env.DB.prepare('SELECT id FROM news WHERE title = ? AND division = ?').bind(title, 'skema').first();
       if (exists) continue;
 
       await env.DB.prepare(
-        'INSERT INTO news (title, source, url, summary, published_at, division) VALUES (?, ?, ?, ?, ?, ?)'
-      ).bind(title, source, urlNews, '', publishedAt, 'skema').run();
+        'INSERT INTO news (title, source, url, summary, published_at, division, image_url) VALUES (?, ?, ?, ?, ?, ?, ?)'
+      ).bind(title, source, urlNews, '', publishedAt, 'skema', imageUrl).run();
       await appendAudit(env, 'auto_news', 'Berita skema baru: ' + title);
       added++;
     }
@@ -252,6 +295,7 @@ async function ensureTables(env) {
       priority TEXT DEFAULT 'sedang',
       status TEXT DEFAULT 'pending',
       assignee TEXT DEFAULT '',
+      description TEXT DEFAULT '',
       result TEXT DEFAULT '',
       due_date TEXT DEFAULT '',
       last_processed_at TEXT DEFAULT '',
@@ -282,6 +326,20 @@ async function ensureTables(env) {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       type TEXT DEFAULT 'aksi',
       detail TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now'))
+    )`
+  ).run();
+
+  await env.DB.prepare(
+    `CREATE TABLE IF NOT EXISTS news (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      source TEXT DEFAULT '',
+      url TEXT DEFAULT '',
+      summary TEXT DEFAULT '',
+      published_at TEXT DEFAULT '',
+      division TEXT DEFAULT 'skema',
+      image_url TEXT DEFAULT '',
       created_at TEXT DEFAULT (datetime('now'))
     )`
   ).run();

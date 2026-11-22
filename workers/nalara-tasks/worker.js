@@ -206,9 +206,10 @@ export default {
         const summary = (body.summary || '').trim();
         const publishedAt = (body.published_at || '').trim();
         const division = (body.division || 'skema').trim();
+        const imageUrl = (body.image_url || '').trim();
         const { meta } = await env.DB.prepare(
-          'INSERT INTO news (title, source, url, summary, published_at, division) VALUES (?, ?, ?, ?, ?, ?)'
-        ).bind(title, source, urlNews, summary, publishedAt, division).run();
+          'INSERT INTO news (title, source, url, summary, published_at, division, image_url) VALUES (?, ?, ?, ?, ?, ?, ?)'
+        ).bind(title, source, urlNews, summary, publishedAt, division, imageUrl).run();
         const { results } = await env.DB.prepare('SELECT * FROM news WHERE id = ?').bind(meta.last_row_id).all();
         return json({ success: true, data: results[0] || null }, corsHeaders, 201);
       }
@@ -292,6 +293,7 @@ async function ensureTables(env) {
       summary TEXT DEFAULT '',
       published_at TEXT DEFAULT '',
       division TEXT DEFAULT 'skema',
+      image_url TEXT DEFAULT '',
       created_at TEXT DEFAULT (datetime('now'))
     )`
   ).run();
