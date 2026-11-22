@@ -27,7 +27,7 @@ jobs:
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip
           unzip -q cmdline-tools.zip -d /tmp/cmdline-tools-temp
           cp -r /tmp/cmdline-tools-temp/cmdline-tools/* /opt/android-sdk/cmdline-tools/latest/
-          echo "ANDROID_SDK_ROOT=/opt/android-sdk" >> $GITHUB_ENV
+          echo "ANDROID_HOME=/opt/android-sdk" >> $GITHUB_ENV
           echo "/opt/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
 
       - name: Accept licenses and install SDK packages
@@ -46,4 +46,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: N
+          name: NALARA-OS-APK
+          path: app/build/outputs/apk/debug/*.apk
