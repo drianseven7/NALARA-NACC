@@ -3,162 +3,356 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <meta name="theme-color" content="#0B0B0D">
 <title>NALARA OS</title>
 
 <style>
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+:root {
+    --bg:#0B0B0D;
+    --panel:#151519;
+    --border:#29292F;
+    --silver:#A7AEB8;
+    --white:#F5F5F5;
+    --accent:#D5D9E0;
 }
-
+* {box-sizing:border-box;margin:0;padding:0}
 body {
-    background: #0B0B0D;
-    color: #F5F5F5;
-    font-family: Arial, sans-serif;
-    min-height: 100vh;
+    background:var(--bg);
+    color:var(--white);
+    font-family:Arial,sans-serif;
+    min-height:100vh;
+    padding-bottom:85px;
 }
-
 header {
-    padding: 25px 20px;
-    border-bottom: 1px solid #292929;
+    padding:22px 20px 18px;
+    border-bottom:1px solid var(--border);
+    position:sticky;
+    top:0;
+    background:#0B0B0D;
+    z-index:5;
 }
-
-.logo {
-    font-size: 23px;
-    font-weight: bold;
-    letter-spacing: 4px;
-}
-
-.subtitle {
-    color: #A7AEB8;
-    font-size: 11px;
-    margin-top: 7px;
-    letter-spacing: 2px;
-}
-
-main {
-    padding: 22px 18px;
-}
-
-.welcome {
-    margin-bottom: 25px;
-}
-
-.welcome h1 {
-    font-size: 25px;
-    margin-bottom: 8px;
-}
-
-.welcome p {
-    color: #A7AEB8;
-    font-size: 13px;
-}
-
+.brand {font-size:22px;font-weight:bold;letter-spacing:4px}
+.brand-sub {font-size:10px;color:var(--silver);letter-spacing:2px;margin-top:6px}
+main {padding:22px 18px}
+.page {display:none}
+.page.active {display:block}
+h1 {font-size:25px;margin-bottom:8px}
+.subtitle {font-size:13px;color:var(--silver);line-height:1.5}
 .section-title {
-    font-size: 12px;
-    color: #A7AEB8;
-    letter-spacing: 2px;
-    margin: 25px 0 13px;
+    color:var(--silver);
+    font-size:11px;
+    letter-spacing:2px;
+    margin:25px 0 12px;
 }
-
 .card {
-    background: #151519;
-    border: 1px solid #292929;
-    border-radius: 13px;
-    padding: 18px;
-    margin-bottom: 12px;
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:13px;
+    padding:17px;
+    margin-bottom:12px;
 }
-
-.card h3 {
-    font-size: 16px;
-    margin-bottom: 7px;
+.card h3 {font-size:16px;margin-bottom:7px}
+.card p {font-size:12px;color:var(--silver);line-height:1.5}
+.card small {display:block;color:#D5D9E0;margin-top:12px;font-size:10px}
+button {
+    border:1px solid #414149;
+    background:#24242A;
+    color:white;
+    border-radius:9px;
+    padding:12px 15px;
+    font-size:12px;
+    cursor:pointer;
 }
-
-.card p {
-    color: #A7AEB8;
-    font-size: 12px;
-    line-height: 1.5;
+button:active {opacity:.65}
+.primary {background:#E5E7EB;color:#111;border:0;font-weight:bold}
+.full {width:100%;margin-top:12px}
+.stats {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin-top:20px;
 }
-
-.status {
-    color: #D6D6D6;
-    font-size: 10px;
-    margin-top: 12px;
+.stat {
+    background:var(--panel);
+    border:1px solid var(--border);
+    padding:16px;
+    border-radius:12px;
 }
-
-footer {
-    text-align: center;
-    padding: 25px;
-    color: #777;
-    font-size: 10px;
-    letter-spacing: 2px;
+.stat strong {font-size:23px;display:block}
+.stat span {font-size:10px;color:var(--silver)}
+.nav {
+    position:fixed;
+    bottom:0;
+    left:0;
+    right:0;
+    display:flex;
+    justify-content:space-around;
+    background:#121216;
+    border-top:1px solid var(--border);
+    padding:10px 3px calc(10px + env(safe-area-inset-bottom));
+    z-index:10;
 }
+.nav button {
+    background:transparent;
+    border:0;
+    color:#85858E;
+    padding:8px 5px;
+    font-size:10px;
+    flex:1;
+}
+.nav button.active {color:white;font-weight:bold}
+.nav .symbol {display:block;font-size:19px;margin-bottom:5px}
+input,textarea,select {
+    width:100%;
+    background:#101014;
+    color:white;
+    border:1px solid #383840;
+    border-radius:9px;
+    padding:13px;
+    margin-top:10px;
+    font-size:13px;
+}
+.task {
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+.task input {width:19px;height:19px;margin:0}
+.task.done p {text-decoration:line-through;color:#777}
+.muted {color:var(--silver);font-size:12px}
+.detail-back {margin-bottom:18px}
+footer {text-align:center;color:#666;font-size:10px;padding:25px}
 </style>
 </head>
 
 <body>
 
 <header>
-    <div class="logo">NALARA</div>
-    <div class="subtitle">GROUP OPERATING SYSTEM</div>
+    <div class="brand">NALARA</div>
+    <div class="brand-sub">GROUP OPERATING SYSTEM</div>
 </header>
 
 <main>
 
-    <section class="welcome">
-        <h1>Executive Dashboard</h1>
-        <p>Central command for NALARA GROUP.</p>
-    </section>
+<section class="page active" id="dashboard">
+    <h1>Executive Dashboard</h1>
+    <p class="subtitle">Central command for NALARA GROUP.</p>
 
-    <div class="section-title">BUSINESS UNITS</div>
+    <div class="stats">
+        <div class="stat"><strong>03</strong><span>BUSINESS UNITS</span></div>
+        <div class="stat"><strong id="taskCount">0</strong><span>TOTAL TASKS</span></div>
+        <div class="stat"><strong>03</strong><span>AI STAFF RECORDS</span></div>
+        <div class="stat"><strong>01</strong><span>PRIORITY UNIT</span></div>
+    </div>
 
-    <div class="card">
+    <div class="section-title">OPERATIONAL PRIORITY</div>
+    <div class="card" onclick="showPage('units')">
         <h3>SKEMANYA</h3>
         <p>Media, informasi, berita, dan wawasan.</p>
-        <div class="status">OPERATIONAL PRIORITY</div>
+        <small>OPERATIONAL PRIORITY · BUKA DETAIL →</small>
     </div>
 
-    <div class="card">
+    <div class="section-title">QUICK ACCESS</div>
+    <div class="card" onclick="showPage('staff')">
+        <h3>AI Workforce</h3>
+        <p>Lihat direktori dan status personel AI.</p>
+    </div>
+    <div class="card" onclick="showPage('tasks')">
+        <h3>Task Management</h3>
+        <p>Kelola dan pantau pekerjaan operasional.</p>
+    </div>
+</section>
+
+<section class="page" id="units">
+    <h1>Business Units</h1>
+    <p class="subtitle">Unit bisnis dalam NALARA GROUP.</p>
+
+    <div class="section-title">BUSINESS PORTFOLIO</div>
+
+    <div class="card" onclick="showDetail('SKEMANYA','Media, informasi, berita, dan wawasan.','OPERATIONAL PRIORITY')">
+        <h3>SKEMANYA</h3>
+        <p>Media, informasi, berita, dan wawasan.</p>
+        <small>OPERATIONAL PRIORITY · DETAIL →</small>
+    </div>
+
+    <div class="card" onclick="showDetail('ATMOSFERBOLA','Football media and information network.','PLANNED')">
         <h3>ATMOSFERBOLA</h3>
         <p>Football media and information network.</p>
-        <div class="status">PLANNED</div>
+        <small>PLANNED · DETAIL →</small>
     </div>
 
-    <div class="card">
+    <div class="card" onclick="showDetail('HOMESIKED.ID','Fashion brand and creative business.','PLANNED')">
         <h3>HOMESIKED.ID</h3>
         <p>Fashion brand and creative business.</p>
-        <div class="status">PLANNED</div>
+        <small>PLANNED · DETAIL →</small>
     </div>
+</section>
 
-    <div class="section-title">AI WORKFORCE</div>
+<section class="page" id="staff">
+    <h1>AI Workforce</h1>
+    <p class="subtitle">Direktori personel AI NALARA GROUP.</p>
 
-    <div class="card">
+    <div class="section-title">STAFF DIRECTORY</div>
+
+    <div class="card" onclick="showDetail('Jimmy','Chief of Staff. Proyek AI terpisah yang belum terhubung ke NALARA OS.','EXISTING PROJECT · NOT CONNECTED')">
         <h3>Jimmy</h3>
         <p>Chief of Staff</p>
-        <div class="status">EXISTING PROJECT · NOT CONNECTED</div>
+        <small>EXISTING PROJECT · NOT CONNECTED</small>
     </div>
 
-    <div class="card">
+    <div class="card" onclick="showDetail('Angelia','Corporate Secretary. Belum terhubung ke NALARA OS.','PLANNED')">
         <h3>Angelia</h3>
         <p>Corporate Secretary</p>
-        <div class="status">PLANNED IN NALARA OS</div>
+        <small>PLANNED IN NALARA OS</small>
     </div>
 
-    <div class="card">
+    <div class="card" onclick="showDetail('Team Research Officer','Research and intelligence.','PLANNED')">
         <h3>Team Research Officer</h3>
         <p>Research and intelligence</p>
-        <div class="status">PLANNED IN NALARA OS</div>
+        <small>PLANNED IN NALARA OS</small>
     </div>
+</section>
 
+<section class="page" id="tasks">
+    <h1>Task Management</h1>
+    <p class="subtitle">Pusat pencatatan pekerjaan operasional.</p>
+
+    <div class="section-title">CREATE NEW TASK</div>
+    <form id="taskForm">
+        <input id="taskInput" placeholder="Masukkan nama tugas..." required>
+        <select id="taskUnit">
+            <option value="NALARA GROUP">NALARA GROUP</option>
+            <option value="SKEMANYA">SKEMANYA</option>
+            <option value="ATMOSFERBOLA">ATMOSFERBOLA</option>
+            <option value="HOMESIKED.ID">HOMESIKED.ID</option>
+        </select>
+        <button class="primary full" type="submit">+ Tambahkan Tugas</button>
+    </form>
+
+    <div class="section-title">TASK LIST</div>
+    <div id="taskList"></div>
+</section>
+
+<section class="page" id="detail">
+    <button class="detail-back" onclick="showPage('units')">← Kembali</button>
+    <h1 id="detailTitle">Detail</h1>
+    <p class="subtitle" id="detailDescription"></p>
+    <div class="section-title">CURRENT STATUS</div>
+    <div class="card"><h3 id="detailStatus"></h3><p>Status konfigurasi saat ini.</p></div>
+</section>
+
+<section class="page" id="governance">
+    <h1>Governance</h1>
+    <p class="subtitle">Corporate governance dan internal oversight.</p>
+    <div class="section-title">OVERSIGHT</div>
+    <div class="card">
+        <h3>Governance & Internal Oversight</h3>
+        <p>Fungsi pengawasan independen. Modul audit dan kontrol akses belum terhubung.</p>
+        <small>PLANNED MODULE</small>
+    </div>
+    <div class="card">
+        <h3>Audit Logs</h3>
+        <p>Pencatatan aktivitas akan tersedia setelah backend terintegrasi.</p>
+        <small>NOT CONNECTED</small>
+    </div>
+</section>
+
+<footer>NALARA GROUP © 2026</footer>
 </main>
 
-<footer>
-    NALARA GROUP © 2026
-</footer>
+<nav class="nav">
+    <button class="active" data-page="dashboard" onclick="showPage('dashboard')"><span class="symbol">⌂</span>Home</button>
+    <button data-page="units" onclick="showPage('units')"><span class="symbol">▦</span>Units</button>
+    <button data-page="staff" onclick="showPage('staff')"><span class="symbol">♙</span>Staff</button>
+    <button data-page="tasks" onclick="showPage('tasks')"><span class="symbol">☷</span>Tasks</button>
+    <button data-page="governance" onclick="showPage('governance')"><span class="symbol">◇</span>Governance</button>
+</nav>
+
+<script>
+function showPage(page) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById(page).classList.add('active');
+
+    document.querySelectorAll('.nav button').forEach(b => {
+        b.classList.toggle('active', b.dataset.page === page);
+    });
+
+    window.scrollTo(0,0);
+    if(page === 'tasks') renderTasks();
+}
+
+function showDetail(name, description, status) {
+    document.getElementById('detailTitle').textContent = name;
+    document.getElementById('detailDescription').textContent = description;
+    document.getElementById('detailStatus').textContent = status;
+    showPage('detail');
+}
+
+let tasks = [];
+try {
+    tasks = JSON.parse(localStorage.getItem('nalara_tasks') || '[]');
+} catch(e) {
+    tasks = [];
+}
+
+function saveTasks() {
+    localStorage.setItem('nalara_tasks', JSON.stringify(tasks));
+    renderTasks();
+}
+
+function renderTasks() {
+    const list = document.getElementById('taskList');
+    document.getElementById('taskCount').textContent = tasks.length;
+
+    if(tasks.length === 0) {
+        list.innerHTML = '<p class="muted">Belum ada tugas. Tambahkan tugas pertama.</p>';
+        return;
+    }
+
+    list.innerHTML = '';
+    tasks.forEach((task,index) => {
+        const card = document.createElement('div');
+        card.className = 'card task' + (task.done ? ' done' : '');
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = task.done;
+        checkbox.addEventListener('change', () => {
+            tasks[index].done = checkbox.checked;
+            saveTasks();
+        });
+
+        const content = document.createElement('div');
+        content.style.flex = '1';
+
+        const title = document.createElement('p');
+        title.textContent = task.title;
+
+        const unit = document.createElement('small');
+        unit.textContent = task.unit;
+
+        content.append(title,unit);
+        card.append(checkbox,content);
+        list.append(card);
+    });
+}
+
+document.getElementById('taskForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const title = document.getElementById('taskInput').value.trim();
+    const unit = document.getElementById('taskUnit').value;
+
+    if(!title) return;
+
+    tasks.push({title,unit,done:false});
+    this.reset();
+    saveTasks();
+});
+
+renderTasks();
+</script>
 
 </body>
-  </html>
-
+</html>
