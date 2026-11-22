@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -17,6 +16,7 @@
     --accent:#D5D9E0;
     --green:#55D68B;
     --red:#FF7777;
+    --amber:#E6C15C;
 }
 * {box-sizing:border-box;margin:0;padding:0}
 body {
@@ -72,7 +72,9 @@ button {
     cursor:pointer;
 }
 button:active {opacity:.65}
+button:disabled {opacity:.5;cursor:default}
 .primary {background:#E5E7EB;color:#111;border:0;font-weight:bold}
+.danger {background:#2a1a1a;border-color:#5a2e2e;color:#ffb3b3}
 .full {width:100%;margin-top:12px}
 .stats {
     display:grid;
@@ -104,12 +106,12 @@ button:active {opacity:.65}
     background:transparent;
     border:0;
     color:#85858E;
-    padding:8px 5px;
-    font-size:10px;
+    padding:8px 4px;
+    font-size:9px;
     flex:1;
 }
 .nav button.active {color:white;font-weight:bold}
-.nav .symbol {display:block;font-size:19px;margin-bottom:5px}
+.nav .symbol {display:block;font-size:18px;margin-bottom:5px}
 input,textarea,select {
     width:100%;
     background:#101014;
@@ -121,14 +123,94 @@ input,textarea,select {
     font-size:13px;
 }
 .task {display:flex;align-items:center;gap:10px}
-.task input {width:19px;height:19px;margin:0}
+.task input[type=checkbox] {width:19px;height:19px;margin:0}
 .task.done p {text-decoration:line-through;color:#777}
+.task .task-body {flex:1;min-width:0}
 .muted {color:var(--silver);font-size:12px}
 .detail-back {margin-bottom:18px}
 .status-online {color:var(--green)!important}
 .status-error {color:var(--red)!important}
 .empty {padding:15px;color:var(--silver);font-size:12px}
 footer {text-align:center;color:#666;font-size:10px;padding:25px}
+
+/* Status badges */
+.badge {
+    display:inline-block;
+    padding:4px 10px;
+    border-radius:20px;
+    font-size:10px;
+    font-weight:bold;
+    letter-spacing:1px;
+    margin-top:10px;
+}
+.badge.planned {background:#23252c;color:#8a8f99;border:1px solid #34373f}
+.badge.configured {background:#1d2633;color:#7aa7d8;border:1px solid #2c3a4d}
+.badge.connected {background:#14241c;color:#55D68B;border:1px solid #1f3a2c}
+.badge.active {background:#14241c;color:#55D68B;border:1px solid #1f3a2c}
+.badge.paused {background:#2a2314;color:#E6C15C;border:1px solid #453a1e}
+
+/* Priority tag */
+.prio {
+    display:inline-block;
+    padding:3px 8px;
+    border-radius:6px;
+    font-size:9px;
+    font-weight:bold;
+    letter-spacing:1px;
+    margin-top:8px;
+}
+.prio.tinggi {background:#2a1a1a;color:#ff9c9c;border:1px solid #5a2e2e}
+.prio.sedang {background:#2a2314;color:#E6C15C;border:1px solid #453a1e}
+.prio.rendah {background:#14241c;color:#55D68B;border:1px solid #1f3a2c}
+
+/* Chat */
+.chat-window {
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:13px;
+    padding:14px;
+    height:320px;
+    overflow-y:auto;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+}
+.msg {
+    max-width:82%;
+    padding:10px 13px;
+    border-radius:12px;
+    font-size:13px;
+    line-height:1.45;
+    word-wrap:break-word;
+}
+.msg.jimmy {
+    align-self:flex-start;
+    background:#1d1d23;
+    border:1px solid var(--border);
+    border-bottom-left-radius:4px;
+    color:var(--white);
+}
+.msg.user {
+    align-self:flex-end;
+    background:#E5E7EB;
+    color:#111;
+    border-bottom-right-radius:4px;
+}
+.msg.system {
+    align-self:center;
+    background:transparent;
+    color:var(--silver);
+    font-size:11px;
+    text-align:center;
+}
+.msg .meta {
+    display:block;
+    font-size:9px;
+    opacity:.6;
+    margin-top:5px;
+}
+.chat-hint {font-size:11px;color:var(--silver);text-align:center;padding:8px}
+.auth-status {font-size:11px;margin-top:10px}
 </style>
 </head>
 
@@ -144,7 +226,7 @@ footer {text-align:center;color:#666;font-size:10px;padding:25px}
 
 <section class="page active" id="dashboard">
     <h1>Executive Dashboard</h1>
-    <p class="subtitle">Central command for NALARA GROUP.</p>
+    <p class="subtitle">Pusat kendali NALARA GROUP.</p>
 
     <div class="stats">
         <div class="stat"><strong id="unitCount">--</strong><span>BUSINESS UNITS</span></div>
@@ -153,14 +235,14 @@ footer {text-align:center;color:#666;font-size:10px;padding:25px}
         <div class="stat"><strong>01</strong><span>PRIORITY UNIT</span></div>
     </div>
 
-    <div class="section-title">OPERATIONAL PRIORITY</div>
+    <div class="section-title">PRIORITAS OPERASIONAL</div>
     <div class="card" onclick="showPage('units')">
         <h3>SKEMANYA</h3>
         <p>Media, informasi, berita, dan wawasan.</p>
-        <small>OPERATIONAL PRIORITY · BUKA DETAIL →</small>
+        <small>PRIORITAS OPERASIONAL · BUKA DETAIL →</small>
     </div>
 
-    <div class="section-title">QUICK ACCESS</div>
+    <div class="section-title">AKSES CEPAT</div>
     <div class="card" onclick="showPage('staff')">
         <h3>AI Workforce</h3>
         <p>Lihat direktori dan status personel AI.</p>
@@ -168,6 +250,10 @@ footer {text-align:center;color:#666;font-size:10px;padding:25px}
     <div class="card" onclick="showPage('tasks')">
         <h3>Task Management</h3>
         <p>Kelola dan pantau pekerjaan operasional.</p>
+    </div>
+    <div class="card" onclick="showPage('jimmy')">
+        <h3>Jimmy</h3>
+        <p>Berkomunikasi dengan Chief of Staff AI.</p>
     </div>
 
     <button class="full" onclick="loadBackendData()">↻ Refresh Backend Data</button>
@@ -177,7 +263,7 @@ footer {text-align:center;color:#666;font-size:10px;padding:25px}
     <h1>Business Units</h1>
     <p class="subtitle">Unit bisnis dalam NALARA GROUP.</p>
 
-    <div class="section-title">BUSINESS PORTFOLIO</div>
+    <div class="section-title">PORTOFOLIO BISNIS</div>
     <div id="unitList">
         <div class="empty">Memuat data unit bisnis...</div>
     </div>
@@ -187,7 +273,7 @@ footer {text-align:center;color:#666;font-size:10px;padding:25px}
     <h1>AI Workforce</h1>
     <p class="subtitle">Direktori personel AI NALARA GROUP.</p>
 
-    <div class="section-title">STAFF DIRECTORY</div>
+    <div class="section-title">DIREKTORI STAFF</div>
     <div id="staffList">
         <div class="empty">Memuat data AI Staff...</div>
     </div>
@@ -197,7 +283,7 @@ footer {text-align:center;color:#666;font-size:10px;padding:25px}
     <h1>Task Management</h1>
     <p class="subtitle">Pusat pencatatan pekerjaan operasional.</p>
 
-    <div class="section-title">CREATE NEW TASK</div>
+    <div class="section-title">BUAT TUGAS BARU</div>
     <form id="taskForm">
         <input id="taskInput" placeholder="Masukkan nama tugas..." required>
         <select id="taskUnit">
@@ -206,10 +292,15 @@ footer {text-align:center;color:#666;font-size:10px;padding:25px}
             <option value="ATMOSFERBOLA">ATMOSFERBOLA</option>
             <option value="HOMESIKED.ID">HOMESIKED.ID</option>
         </select>
+        <select id="taskPriority">
+            <option value="sedang">Prioritas: Sedang</option>
+            <option value="tinggi">Prioritas: Tinggi</option>
+            <option value="rendah">Prioritas: Rendah</option>
+        </select>
         <button class="primary full" type="submit">+ Tambahkan Tugas</button>
     </form>
 
-    <div class="section-title">TASK LIST</div>
+    <div class="section-title">DAFTAR TUGAS</div>
     <div id="taskList"></div>
 </section>
 
@@ -217,28 +308,56 @@ footer {text-align:center;color:#666;font-size:10px;padding:25px}
     <button class="detail-back" onclick="showPage('units')">← Kembali</button>
     <h1 id="detailTitle">Detail</h1>
     <p class="subtitle" id="detailDescription"></p>
-    <div class="section-title">CURRENT STATUS</div>
+    <div class="section-title">STATUS SAAT INI</div>
     <div class="card">
         <h3 id="detailStatus"></h3>
         <p>Status konfigurasi saat ini.</p>
     </div>
 </section>
 
+<section class="page" id="jimmy">
+    <h1>Jimmy</h1>
+    <p class="subtitle">Chief of Staff · pusat koordinasi NALARA GROUP.</p>
+
+    <div class="section-title">KONEKSI</div>
+    <div class="card" id="jimmyAuthCard">
+        <h3>Autentikasi Owner</h3>
+        <p>Masukkan owner password untuk menghubungkan sesi dengan Jimmy. Password hanya disimpan sementara di sesi ini.</p>
+        <input type="password" id="ownerPasswordInput" placeholder="Owner password" autocomplete="off">
+        <div class="auth-status" id="jimmyAuthStatus"></div>
+        <button class="primary full" id="connectBtn" onclick="connectJimmy()">Hubungkan</button>
+    </div>
+
+    <div class="card" id="jimmySessionCard" style="display:none">
+        <h3>Terhubung ke Jimmy</h3>
+        <p>Sesi aktif. Kirim instruksi atau pertanyaan di bawah.</p>
+        <button class="danger full" id="disconnectBtn" onclick="disconnectJimmy()">Putuskan Koneksi</button>
+    </div>
+
+    <div class="section-title">PERCAKAPAN</div>
+    <div class="chat-window" id="chatWindow"></div>
+
+    <form id="chatForm" style="display:none">
+        <input id="chatInput" placeholder="Ketik pesan untuk Jimmy..." autocomplete="off">
+        <button class="primary full" type="submit">Kirim ke Jimmy</button>
+    </form>
+</section>
+
 <section class="page" id="governance">
     <h1>Governance</h1>
-    <p class="subtitle">Corporate governance dan internal oversight.</p>
+    <p class="subtitle">Tata kelola perusahaan dan pengawasan internal.</p>
 
-    <div class="section-title">OVERSIGHT</div>
+    <div class="section-title">PENGAWASAN</div>
     <div class="card">
         <h3>Governance & Internal Oversight</h3>
         <p>Fungsi pengawasan independen. Modul audit dan kontrol akses masih dalam pengembangan.</p>
-        <small>PLANNED MODULE</small>
+        <small>MODUL DIRENCANAKAN</small>
     </div>
 
     <div class="card">
         <h3>Audit Logs</h3>
         <p>Pencatatan aktivitas akan tersedia setelah modul audit diintegrasikan.</p>
-        <small>DATABASE TABLE CREATED</small>
+        <small>TABEL DATABASE DIBUAT</small>
     </div>
 </section>
 
@@ -250,11 +369,13 @@ footer {text-align:center;color:#666;font-size:10px;padding:25px}
     <button data-page="units" onclick="showPage('units')"><span class="symbol">▦</span>Units</button>
     <button data-page="staff" onclick="showPage('staff')"><span class="symbol">♙</span>Staff</button>
     <button data-page="tasks" onclick="showPage('tasks')"><span class="symbol">☷</span>Tasks</button>
-    <button data-page="governance" onclick="showPage('governance')"><span class="symbol">◇</span>Governance</button>
+    <button data-page="jimmy" onclick="showPage('jimmy')"><span class="symbol">✦</span>Jimmy</button>
+    <button data-page="governance" onclick="showPage('governance')"><span class="symbol">◇</span>Gov</button>
 </nav>
 
 <script>
 const API_BASE = "https://fragrant-rice-1082nalaraos.adrianakbar0202.workers.dev";
+const JIMMY_BASE = "https://jimmy-ai.adrianakbar0202.workers.dev";
 
 let businessUnits = [];
 let aiStaff = [];
@@ -272,6 +393,7 @@ function showPage(page) {
     if(page === 'tasks') renderTasks();
     if(page === 'units') renderUnits();
     if(page === 'staff') renderStaff();
+    if(page === 'jimmy') initJimmyUI();
 }
 
 function showDetail(name, description, status, backPage) {
@@ -303,7 +425,7 @@ async function apiGet(endpoint) {
 }
 
 async function loadBackendData() {
-    setConnectionStatus('CONNECTING TO NALARA API', 'loading');
+    setConnectionStatus('MENGHUBUNGKAN KE NALARA API', 'loading');
 
     try {
         const [health, units, staff] = await Promise.all([
@@ -333,8 +455,14 @@ async function loadBackendData() {
 
     } catch(error) {
         console.error('NALARA API:', error);
-        setConnectionStatus('API CONNECTION FAILED', 'error');
+        setConnectionStatus('KONEKSI API GAGAL', 'error');
     }
+}
+
+function statusBadge(status) {
+    const s = (status || '').toLowerCase();
+    const cls = ['planned','configured','connected','active','paused'].includes(s) ? s : 'planned';
+    return '<span class="badge ' + cls + '">' + (status || 'Planned').toUpperCase() + '</span>';
 }
 
 function renderUnits() {
@@ -358,7 +486,7 @@ function renderUnits() {
         description.textContent = unit.description || 'Tidak ada deskripsi.';
 
         const status = document.createElement('small');
-        status.textContent = unit.status.toUpperCase();
+        status.innerHTML = statusBadge(unit.status);
 
         card.append(title, description, status);
 
@@ -366,7 +494,7 @@ function renderUnits() {
             showDetail(
                 unit.name,
                 unit.description || '',
-                unit.status.toUpperCase(),
+                (unit.status || 'Planned').toUpperCase(),
                 'units'
             );
         });
@@ -393,18 +521,19 @@ function renderStaff() {
         title.textContent = staff.name;
 
         const description = document.createElement('p');
-        description.textContent = staff.role + ' · ' + (staff.department || 'Unassigned');
+        description.textContent = staff.role + ' · ' + (staff.department || 'Belum ditugaskan');
 
         const status = document.createElement('small');
-        status.textContent = (staff.status + ' · ' + staff.connection_type).toUpperCase();
+        const conn = staff.connection_type ? ' · ' + staff.connection_type : '';
+        status.innerHTML = statusBadge(staff.status) + '<span class="muted">' + conn + '</span>';
 
         card.append(title, description, status);
 
         card.addEventListener('click', () => {
             showDetail(
                 staff.name,
-                staff.role + ' · ' + (staff.department || 'Unassigned'),
-                (staff.status + ' · ' + staff.connection_type).toUpperCase(),
+                staff.role + ' · ' + (staff.department || 'Belum ditugaskan'),
+                (staff.status || 'Planned').toUpperCase() + conn.toUpperCase(),
                 'staff'
             );
         });
@@ -426,6 +555,12 @@ try {
 function saveTasks() {
     localStorage.setItem('nalara_tasks', JSON.stringify(tasks));
     renderTasks();
+}
+
+function prioTag(priority) {
+    const p = priority || 'sedang';
+    const label = { tinggi:'Tinggi', sedang:'Sedang', rendah:'Rendah' }[p] || 'Sedang';
+    return '<span class="prio ' + p + '">' + label.toUpperCase() + '</span>';
 }
 
 function renderTasks() {
@@ -453,13 +588,13 @@ function renderTasks() {
         });
 
         const content = document.createElement('div');
-        content.style.flex = '1';
+        content.className = 'task-body';
 
         const title = document.createElement('p');
         title.textContent = task.title;
 
         const unit = document.createElement('small');
-        unit.textContent = task.unit;
+        unit.innerHTML = task.unit + ' &nbsp;' + prioTag(task.priority);
 
         content.append(title,unit);
         card.append(checkbox,content);
@@ -472,17 +607,180 @@ document.getElementById('taskForm').addEventListener('submit', function(e) {
 
     const title = document.getElementById('taskInput').value.trim();
     const unit = document.getElementById('taskUnit').value;
+    const priority = document.getElementById('taskPriority').value;
 
     if(!title) return;
 
     tasks.push({
         title,
         unit,
+        priority,
         done:false
     });
 
     this.reset();
+    document.getElementById('taskPriority').value = 'sedang';
     saveTasks();
+});
+
+/* JIMMY INTEGRATION */
+const JIMMY_KEY = 'nalara_jimmy_session';
+
+function getJimmyPassword() {
+    try { return sessionStorage.getItem(JIMMY_KEY) || ''; } catch(e) { return ''; }
+}
+function setJimmyPassword(pwd) {
+    try { sessionStorage.setItem(JIMMY_KEY, pwd); } catch(e) {}
+}
+function clearJimmyPassword() {
+    try { sessionStorage.removeItem(JIMMY_KEY); } catch(e) {}
+}
+
+function initJimmyUI() {
+    const connected = !!getJimmyPassword();
+    document.getElementById('jimmyAuthCard').style.display = connected ? 'none' : 'block';
+    document.getElementById('jimmySessionCard').style.display = connected ? 'block' : 'none';
+    document.getElementById('chatForm').style.display = connected ? 'block' : 'none';
+
+    const win = document.getElementById('chatWindow');
+    if(!connected && !win.querySelector('.msg')) {
+        win.innerHTML = '<div class="chat-hint">Hubungkan dulu untuk mulai percakapan dengan Jimmy.</div>';
+    }
+}
+
+async function connectJimmy() {
+    const input = document.getElementById('ownerPasswordInput');
+    const pwd = input.value.trim();
+    const statusEl = document.getElementById('jimmyAuthStatus');
+    const btn = document.getElementById('connectBtn');
+
+    if(!pwd) {
+        statusEl.textContent = 'Masukkan owner password.';
+        statusEl.className = 'auth-status status-error';
+        return;
+    }
+
+    btn.disabled = true;
+    statusEl.textContent = 'Menghubungkan ke Jimmy...';
+    statusEl.className = 'auth-status';
+
+    try {
+        const res = await fetch(JIMMY_BASE + '/auth', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ownerPassword: pwd })
+        });
+        const data = await res.json();
+
+        if(data.success) {
+            setJimmyPassword(pwd);
+            input.value = '';
+            statusEl.textContent = 'Terhubung. Selamat bekerja, Owner.';
+            statusEl.className = 'auth-status status-online';
+            initJimmyUI();
+            addChatMessage('system', 'Terhubung ke Jimmy.');
+        } else {
+            statusEl.textContent = (data.error || 'Autentikasi gagal.') + ' Periksa owner password.';
+            statusEl.className = 'auth-status status-error';
+        }
+    } catch(e) {
+        console.error('Jimmy auth:', e);
+        statusEl.textContent = 'Gagal terhubung ke server Jimmy.';
+        statusEl.className = 'auth-status status-error';
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+function disconnectJimmy() {
+    clearJimmyPassword();
+    const win = document.getElementById('chatWindow');
+    win.innerHTML = '<div class="chat-hint">Hubungkan dulu untuk mulai percakapan dengan Jimmy.</div>';
+    initJimmyUI();
+}
+
+function addChatMessage(type, text) {
+    const win = document.getElementById('chatWindow');
+    const hint = win.querySelector('.chat-hint');
+    if(hint) hint.remove();
+
+    const div = document.createElement('div');
+    div.className = 'msg ' + type;
+
+    if(type === 'system') {
+        div.textContent = text;
+    } else {
+        const now = new Date();
+        const time = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+        div.textContent = text;
+        const meta = document.createElement('span');
+        meta.className = 'meta';
+        meta.textContent = time;
+        div.appendChild(meta);
+    }
+
+    win.appendChild(div);
+    win.scrollTop = win.scrollHeight;
+}
+
+async function sendToJimmy(message) {
+    const pwd = getJimmyPassword();
+    if(!pwd) throw new Error('Belum terhubung');
+
+    const res = await fetch(JIMMY_BASE + '/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message, ownerPassword: pwd })
+    });
+
+    return await res.json();
+}
+
+function extractReply(data) {
+    if(typeof data === 'string') return data;
+    if(!data || typeof data !== 'object') return null;
+    if(data.reply !== undefined) return data.reply;
+    if(data.message !== undefined) return data.message;
+    if(data.response !== undefined) return data.response;
+    if(data.content !== undefined) return data.content;
+    if(data.text !== undefined) return data.text;
+    return null;
+}
+
+document.getElementById('chatForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const input = document.getElementById('chatInput');
+    const message = input.value.trim();
+    if(!message) return;
+
+    addChatMessage('user', message);
+    input.value = '';
+    input.disabled = true;
+
+    try {
+        const data = await sendToJimmy(message);
+        const reply = extractReply(data);
+
+        if(reply !== null) {
+            addChatMessage('jimmy', String(reply));
+        } else if(data && data.error) {
+            if(/autentikasi|password/i.test(data.error)) {
+                disconnectJimmy();
+                addChatMessage('system', 'Sesi berakhir. Hubungkan kembali.');
+            } else {
+                addChatMessage('system', 'Jimmy: ' + data.error);
+            }
+        } else {
+            addChatMessage('system', 'Respons tidak dikenali dari server.');
+        }
+    } catch(err) {
+        console.error('Jimmy chat:', err);
+        addChatMessage('system', 'Gagal mengirim pesan. Periksa koneksi.');
+    } finally {
+        input.disabled = false;
+        input.focus();
+    }
 });
 
 renderTasks();
