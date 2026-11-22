@@ -371,6 +371,15 @@ footer {text-align:center;color:#666;font-size:10px;padding:25px}
     <h1>Governance</h1>
     <p class="subtitle">Tata kelola perusahaan dan pengawasan internal.</p>
 
+    <div class="section-title">AUTO-PILOT</div>
+    <div class="card">
+        <h3>Sistem Orkestrasi Otomatis</h3>
+        <p>Jimmy & agen AI memproses tugas, membuat laporan harian, dan memantau peringatan secara otomatis (via Worker Orchestrator).</p>
+        <div id="autopilotStatus"></div>
+        <div id="autopilotReports"></div>
+        <div id="autopilotAlerts"></div>
+    </div>
+
     <div class="section-title">AUDIT LOGS</div>
     <div class="card">
         <h3>Aktivitas Tercatat <span class="muted" id="auditCount">0</span></h3>
@@ -429,7 +438,7 @@ function showPage(page) {
     if(page === 'units') { renderUnits(); logAudit('view', 'Melihat Business Units'); }
     if(page === 'staff') { renderStaff(); logAudit('view', 'Melihat AI Workforce'); }
     if(page === 'jimmy') initJimmyUI();
-    if(page === 'governance') renderAuditLogs();
+    if(page === 'governance') { renderAuditLogs(); loadAutopilot(); }
 }
 
 function showDetail(name, description, status, backPage) {
@@ -730,6 +739,98 @@ function renderAuditLogs() {
         row.append(type, detail, time);
         list.appendChild(row);
     });
+}
+
+/* AUTO-PILOT (orkestrasi otomatis) */
+const TASKS_API_BASE = ''; // isi URL Tasks Worker setelah deploy, mis. 'https://nalara-tasks.xxx.workers.dev'
+
+async function loadAutopilot() {
+    const statusEl = document.getElementById('autopilotStatus');
+    const reportsEl = document.getElementById('autopilotReports');
+    const alertsEl = document.getElementById('autopilotAlerts');
+    if (!statusEl) return;
+
+    if (!TASKS_API_BASE) {
+        statusEl.innerHTML = '<p class="muted">Worker API Tugas belum di-deploy / URL belum disetel (konstanta TASKS_API_BASE).</p>';
+        return;
+    }
+
+    const pwd = getJimmyPassword();
+    if (!pwd) {
+        statusEl.innerHTML = '<p class="muted">Hubungkan sesi Jimmy dulu untuk membaca status auto-pilot.</p>';
+        return;
+    }
+
+    statusEl.innerHTML = '<p class="muted">Memuat auto-pilot...</p>';
+
+    try {
+        const headers = { 'Authorization': 'Bearer ' + pwd };
+        const [repRes, altRes] = await Promise.all([
+            fetch(TASKS_API_BASE + '/api/reports', { headers }),
+            fetch(TASKS_API_BASE + '/api/alerts', { headers })
+        ]);
+        const rep = await repRes.json();
+        const alt = await altRes.json();
+
+        const reports = (rep.success && Array.isArray(rep.data)) ? rep.data : [];
+        const alerts = (alt.success && Array.isArray(alt.data)) ? alt.data : [];
+
+        statusEl.innerHTML = '<small class="muted">Terhubung ke API Tugas · Laporan: ' + reports.length + ' · Peringatan: ' + alerts.length + '</small>';
+
+        reportsEl.innerHTML = '';
+        if (reports.length) {
+            const title = document.createElement('div');
+            title.className = 'section-title';
+            title.style.marginTop = '14px';
+            title.textContent = 'LAPORAN TERBARU';
+            reportsEl.appendChild(title);
+            reports.slice(0, 3).forEach(r => {
+                reportsEl.appendChild(makeRow('LAPORAN', r.summary || '', fmtDate(r.created_at)));
+            });
+        } else {
+            reportsEl.innerHTML = '<p class="muted">Belum ada laporan.</p>';
+        }
+
+        alertsEl.innerHTML = '';
+        if (alerts.length) {
+            const title = document.createElement('div');
+            title.className = 'section-title';
+            title.style.marginTop = '14px';
+            title.textContent = 'PERINGATAN TERBARU';
+            alertsEl.appendChild(title);
+            alerts.slice(0, 5).forEach(a => {
+                alertsEl.appendChild(makeRow((a.severity || 'info').toUpperCase(), a.message || '', fmtDate(a.created_at)));
+            });
+        } else {
+            alertsEl.innerHTML = '<p class="muted">Tidak ada peringatan.</p>';
+        }
+    } catch (e) {
+        statusEl.innerHTML = '<p class="muted status-error">Gagal membaca auto-pilot: ' + e.message + '</p>';
+    }
+}
+
+function makeRow(typeLabel, detail, time) {
+    const row = document.createElement('div');
+    row.className = 'log-entry';
+    const type = document.createElement('span');
+    type.className = 'log-type';
+    type.textContent = typeLabel;
+    const d = document.createElement('span');
+    d.className = 'log-detail';
+    d.textContent = detail;
+    const t = document.createElement('span');
+    t.className = 'log-time';
+    t.textContent = time;
+    row.append(type, d, t);
+    return row;
+}
+
+function fmtDate(ts) {
+    if (!ts) return '';
+    const d = new Date(ts);
+    if (isNaN(d.getTime())) return String(ts);
+    const pad = n => String(n).padStart(2, '0');
+    return pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
 }
 
 /* JIMMY INTEGRATION */

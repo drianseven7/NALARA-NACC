@@ -65,9 +65,10 @@ export default {
         const priority = ['tinggi', 'sedang', 'rendah'].includes(body.priority) ? body.priority : 'sedang';
         const status = ['pending', 'in_progress', 'done'].includes(body.status) ? body.status : 'pending';
         const assignee = (body.assignee || '').trim();
+        const dueDate = (body.due_date || '').trim();
         const { meta } = await env.DB.prepare(
-          'INSERT INTO tasks (title, unit, priority, status, assignee) VALUES (?, ?, ?, ?, ?)'
-        ).bind(title, unit, priority, status, assignee).run();
+          'INSERT INTO tasks (title, unit, priority, status, assignee, due_date) VALUES (?, ?, ?, ?, ?, ?)'
+        ).bind(title, unit, priority, status, assignee, dueDate).run();
         const { results } = await env.DB.prepare('SELECT * FROM tasks WHERE id = ?').bind(meta.last_row_id).all();
         return json({ success: true, data: results[0] || null }, corsHeaders, 201);
       }
@@ -93,6 +94,9 @@ export default {
           fields.push('status = ?'); values.push(body.status);
         }
         if (body.assignee !== undefined) { fields.push('assignee = ?'); values.push(String(body.assignee).trim()); }
+        if (body.result !== undefined) { fields.push('result = ?'); values.push(String(body.result)); }
+        if (body.due_date !== undefined) { fields.push('due_date = ?'); values.push(String(body.due_date).trim()); }
+        if (body.last_processed_at !== undefined) { fields.push('last_processed_at = ?'); values.push(String(body.last_processed_at)); }
         if (!fields.length) return json({ success: false, error: 'Tidak ada kolom yang diperbarui.' }, corsHeaders, 400);
         values.push(id);
         const { meta } = await env.DB.prepare('UPDATE tasks SET ' + fields.join(', ') + ' WHERE id = ?').bind(...values).run();
@@ -160,6 +164,18 @@ export default {
         return json({ success: true, data: results[0] || null }, corsHeaders, 201);
       }
 
+      // ---- REPORTS ----
+      if (path === '/api/reports' && method === 'GET') {
+        const { results } = await env.DB.prepare('SELECT * FROM reports ORDER BY id DESC LIMIT 50').all();
+        return json({ success: true, data: results }, corsHeaders);
+      }
+
+      // ---- ALERTS ----
+      if (path === '/api/alerts' && method === 'GET') {
+        const { results } = await env.DB.prepare('SELECT * FROM alerts ORDER BY id DESC LIMIT 100').all();
+        return json({ success: true, data: results }, corsHeaders);
+      }
+
       return json({ success: false, error: 'Endpoint tidak ditemukan.' }, corsHeaders, 404);
     } catch (e) {
       return json({ success: false, error: 'Kesalahan server: ' + e.message }, corsHeaders, 500);
@@ -176,6 +192,9 @@ async function ensureTables(env) {
       priority TEXT DEFAULT 'sedang',
       status TEXT DEFAULT 'pending',
       assignee TEXT DEFAULT '',
+      result TEXT DEFAULT '',
+      due_date TEXT DEFAULT '',
+      last_processed_at TEXT DEFAULT '',
       created_at TEXT DEFAULT (datetime('now'))
     )`
   ).run();
@@ -197,6 +216,24 @@ async function ensureTables(env) {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       type TEXT DEFAULT 'aksi',
       detail TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now'))
+    )`
+  ).run();
+
+  await env.DB.prepare(
+    `CREATE TABLE IF NOT EXISTS reports (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      period TEXT DEFAULT '',
+      summary TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now'))
+    )`
+  ).run();
+
+  await env.DB.prepare(
+    `CREATE TABLE IF NOT EXISTS alerts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      severity TEXT DEFAULT 'info',
+      message TEXT NOT NULL,
       created_at TEXT DEFAULT (datetime('now'))
     )`
   ).run();

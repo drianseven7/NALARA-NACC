@@ -9,11 +9,18 @@
 - Jimmy Worker: `https://jimmy-ai.adrianakbar0202.workers.dev`. Kontrak: `POST /auth` `{ownerPassword}` → `{success:true}`/`{success:false,error}`; `POST /` `{message,ownerPassword}` → balasan (cek `reply`/`message`/`response`/`content`/`text`).
 - Keduanya mengizinkan CORS dari WebView file:// (API pakai `*`; Jimmy echo origin).
 
-## NALARA Tasks Worker (baru)
+## NALARA Tasks Worker
 - Kode: `workers/nalara-tasks/worker.js` (Cloudflare Worker mandiri, belum di-deploy).
 - Deploy: buat Worker baru di Cloudflare → tempel kode → binding D1 `DB` → `nalara-os-db` → secret `OWNER_PASSWORD`.
-- Endpoint (auth `Authorization: Bearer <OWNER_PASSWORD>`, kecuali health): `GET/POST /api/tasks`, `PATCH/DELETE /api/tasks/:id`, `GET/POST /api/approvals`, `PATCH /api/approvals/:id`, `GET/POST /api/audit-logs`.
-- Skema tabel dibuat otomatis (`CREATE TABLE IF NOT EXISTS`): tasks(title,unit,priority,status,assignee), approvals(requester,subject,description,status,reviewed_by), audit_logs(type,detail).
+- Endpoint (auth `Authorization: Bearer <OWNER_PASSWORD>`, kecuali health): `GET/POST /api/tasks`, `PATCH/DELETE /api/tasks/:id`, `GET/POST /api/approvals`, `PATCH /api/approvals/:id`, `GET/POST /api/audit-logs`, `GET /api/reports`, `GET /api/alerts`.
+- Skema tabel otomatis (`CREATE TABLE IF NOT EXISTS`): tasks(title,unit,priority,status,assignee,result,due_date,last_processed_at), approvals(requester,subject,description,status,reviewed_by), audit_logs(type,detail), reports(period,summary), alerts(severity,message).
+
+## NALARA Orchestrator Worker (automasi)
+- Kode: `workers/nalara-orchestrator/worker.js`. Menjalankan pipeline otomatis saat dipicu.
+- Deploy: Create Worker baru → tempel kode → binding D1 `DB` → secret `OWNER_PASSWORD` → secret opsional `JIMMY_URL`.
+- Cron Trigger: Settings → Triggers → tambah jadwal (mis. tiap 15 menit) — memanggil `/__cron`. Manual: `GET /run` dengan auth.
+- Pipeline: proses tugas pending ber-assignee via Jimmy/Gemini → simpan `result` & status done; laporan harian ke `reports`; peringatan (tugas terlambat/unit nonaktif) ke `alerts`.
+- App: halaman Governance menampilkan Auto-pilot; set konstanta `TASKS_API_BASE` di index.html ke URL Tasks Worker untuk mengaktifkan.
 
 ## Keamanan (wajib)
 - JANGAN tanam GEMINI_API_KEY atau owner password di source code/APK.
