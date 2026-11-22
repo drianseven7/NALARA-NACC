@@ -15,6 +15,8 @@
     --silver:#A7AEB8;
     --white:#F5F5F5;
     --accent:#D5D9E0;
+    --green:#55D68B;
+    --red:#FF7777;
 }
 * {box-sizing:border-box;margin:0;padding:0}
 body {
@@ -34,6 +36,11 @@ header {
 }
 .brand {font-size:22px;font-weight:bold;letter-spacing:4px}
 .brand-sub {font-size:10px;color:var(--silver);letter-spacing:2px;margin-top:6px}
+#connectionStatus {
+    font-size:10px;
+    color:var(--silver);
+    margin-top:8px;
+}
 main {padding:22px 18px}
 .page {display:none}
 .page.active {display:block}
@@ -113,15 +120,14 @@ input,textarea,select {
     margin-top:10px;
     font-size:13px;
 }
-.task {
-    display:flex;
-    align-items:center;
-    gap:10px;
-}
+.task {display:flex;align-items:center;gap:10px}
 .task input {width:19px;height:19px;margin:0}
 .task.done p {text-decoration:line-through;color:#777}
 .muted {color:var(--silver);font-size:12px}
 .detail-back {margin-bottom:18px}
+.status-online {color:var(--green)!important}
+.status-error {color:var(--red)!important}
+.empty {padding:15px;color:var(--silver);font-size:12px}
 footer {text-align:center;color:#666;font-size:10px;padding:25px}
 </style>
 </head>
@@ -131,6 +137,7 @@ footer {text-align:center;color:#666;font-size:10px;padding:25px}
 <header>
     <div class="brand">NALARA</div>
     <div class="brand-sub">GROUP OPERATING SYSTEM</div>
+    <div id="connectionStatus">● CONNECTING TO NALARA API</div>
 </header>
 
 <main>
@@ -140,9 +147,9 @@ footer {text-align:center;color:#666;font-size:10px;padding:25px}
     <p class="subtitle">Central command for NALARA GROUP.</p>
 
     <div class="stats">
-        <div class="stat"><strong>03</strong><span>BUSINESS UNITS</span></div>
+        <div class="stat"><strong id="unitCount">--</strong><span>BUSINESS UNITS</span></div>
         <div class="stat"><strong id="taskCount">0</strong><span>TOTAL TASKS</span></div>
-        <div class="stat"><strong>03</strong><span>AI STAFF RECORDS</span></div>
+        <div class="stat"><strong id="staffCount">--</strong><span>AI STAFF RECORDS</span></div>
         <div class="stat"><strong>01</strong><span>PRIORITY UNIT</span></div>
     </div>
 
@@ -162,6 +169,8 @@ footer {text-align:center;color:#666;font-size:10px;padding:25px}
         <h3>Task Management</h3>
         <p>Kelola dan pantau pekerjaan operasional.</p>
     </div>
+
+    <button class="full" onclick="loadBackendData()">↻ Refresh Backend Data</button>
 </section>
 
 <section class="page" id="units">
@@ -169,23 +178,8 @@ footer {text-align:center;color:#666;font-size:10px;padding:25px}
     <p class="subtitle">Unit bisnis dalam NALARA GROUP.</p>
 
     <div class="section-title">BUSINESS PORTFOLIO</div>
-
-    <div class="card" onclick="showDetail('SKEMANYA','Media, informasi, berita, dan wawasan.','OPERATIONAL PRIORITY')">
-        <h3>SKEMANYA</h3>
-        <p>Media, informasi, berita, dan wawasan.</p>
-        <small>OPERATIONAL PRIORITY · DETAIL →</small>
-    </div>
-
-    <div class="card" onclick="showDetail('ATMOSFERBOLA','Football media and information network.','PLANNED')">
-        <h3>ATMOSFERBOLA</h3>
-        <p>Football media and information network.</p>
-        <small>PLANNED · DETAIL →</small>
-    </div>
-
-    <div class="card" onclick="showDetail('HOMESIKED.ID','Fashion brand and creative business.','PLANNED')">
-        <h3>HOMESIKED.ID</h3>
-        <p>Fashion brand and creative business.</p>
-        <small>PLANNED · DETAIL →</small>
+    <div id="unitList">
+        <div class="empty">Memuat data unit bisnis...</div>
     </div>
 </section>
 
@@ -194,23 +188,8 @@ footer {text-align:center;color:#666;font-size:10px;padding:25px}
     <p class="subtitle">Direktori personel AI NALARA GROUP.</p>
 
     <div class="section-title">STAFF DIRECTORY</div>
-
-    <div class="card" onclick="showDetail('Jimmy','Chief of Staff. Proyek AI terpisah yang belum terhubung ke NALARA OS.','EXISTING PROJECT · NOT CONNECTED')">
-        <h3>Jimmy</h3>
-        <p>Chief of Staff</p>
-        <small>EXISTING PROJECT · NOT CONNECTED</small>
-    </div>
-
-    <div class="card" onclick="showDetail('Angelia','Corporate Secretary. Belum terhubung ke NALARA OS.','PLANNED')">
-        <h3>Angelia</h3>
-        <p>Corporate Secretary</p>
-        <small>PLANNED IN NALARA OS</small>
-    </div>
-
-    <div class="card" onclick="showDetail('Team Research Officer','Research and intelligence.','PLANNED')">
-        <h3>Team Research Officer</h3>
-        <p>Research and intelligence</p>
-        <small>PLANNED IN NALARA OS</small>
+    <div id="staffList">
+        <div class="empty">Memuat data AI Staff...</div>
     </div>
 </section>
 
@@ -239,22 +218,27 @@ footer {text-align:center;color:#666;font-size:10px;padding:25px}
     <h1 id="detailTitle">Detail</h1>
     <p class="subtitle" id="detailDescription"></p>
     <div class="section-title">CURRENT STATUS</div>
-    <div class="card"><h3 id="detailStatus"></h3><p>Status konfigurasi saat ini.</p></div>
+    <div class="card">
+        <h3 id="detailStatus"></h3>
+        <p>Status konfigurasi saat ini.</p>
+    </div>
 </section>
 
 <section class="page" id="governance">
     <h1>Governance</h1>
     <p class="subtitle">Corporate governance dan internal oversight.</p>
+
     <div class="section-title">OVERSIGHT</div>
     <div class="card">
         <h3>Governance & Internal Oversight</h3>
-        <p>Fungsi pengawasan independen. Modul audit dan kontrol akses belum terhubung.</p>
+        <p>Fungsi pengawasan independen. Modul audit dan kontrol akses masih dalam pengembangan.</p>
         <small>PLANNED MODULE</small>
     </div>
+
     <div class="card">
         <h3>Audit Logs</h3>
-        <p>Pencatatan aktivitas akan tersedia setelah backend terintegrasi.</p>
-        <small>NOT CONNECTED</small>
+        <p>Pencatatan aktivitas akan tersedia setelah modul audit diintegrasikan.</p>
+        <small>DATABASE TABLE CREATED</small>
     </div>
 </section>
 
@@ -270,6 +254,11 @@ footer {text-align:center;color:#666;font-size:10px;padding:25px}
 </nav>
 
 <script>
+const API_BASE = "https://fragrant-rice-1082nalaraos.adrianakbar0202.workers.dev";
+
+let businessUnits = [];
+let aiStaff = [];
+
 function showPage(page) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById(page).classList.add('active');
@@ -279,19 +268,157 @@ function showPage(page) {
     });
 
     window.scrollTo(0,0);
+
     if(page === 'tasks') renderTasks();
+    if(page === 'units') renderUnits();
+    if(page === 'staff') renderStaff();
 }
 
-function showDetail(name, description, status) {
+function showDetail(name, description, status, backPage) {
     document.getElementById('detailTitle').textContent = name;
     document.getElementById('detailDescription').textContent = description;
     document.getElementById('detailStatus').textContent = status;
+    document.querySelector('#detail .detail-back').onclick = () => showPage(backPage || 'units');
     showPage('detail');
 }
 
+function setConnectionStatus(message, state) {
+    const element = document.getElementById('connectionStatus');
+    element.textContent = '● ' + message;
+    element.className = state === 'online' ? 'status-online' :
+                        state === 'error' ? 'status-error' : '';
+}
+
+async function apiGet(endpoint) {
+    const response = await fetch(API_BASE + endpoint, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' }
+    });
+
+    if(!response.ok) {
+        throw new Error('HTTP ' + response.status);
+    }
+
+    return await response.json();
+}
+
+async function loadBackendData() {
+    setConnectionStatus('CONNECTING TO NALARA API', 'loading');
+
+    try {
+        const [health, units, staff] = await Promise.all([
+            apiGet('/api/health'),
+            apiGet('/api/business-units'),
+            apiGet('/api/ai-staff')
+        ]);
+
+        if(!health.success || health.database !== 'connected') {
+            throw new Error('Database belum terhubung');
+        }
+
+        if(!units.success || !staff.success) {
+            throw new Error('Gagal membaca data backend');
+        }
+
+        businessUnits = units.data || [];
+        aiStaff = staff.data || [];
+
+        document.getElementById('unitCount').textContent = businessUnits.length;
+        document.getElementById('staffCount').textContent = aiStaff.length;
+
+        renderUnits();
+        renderStaff();
+
+        setConnectionStatus('NALARA API ONLINE · DATABASE CONNECTED', 'online');
+
+    } catch(error) {
+        console.error('NALARA API:', error);
+        setConnectionStatus('API CONNECTION FAILED', 'error');
+    }
+}
+
+function renderUnits() {
+    const list = document.getElementById('unitList');
+
+    if(!businessUnits.length) {
+        list.innerHTML = '<div class="empty">Data unit bisnis belum tersedia.</div>';
+        return;
+    }
+
+    list.innerHTML = '';
+
+    businessUnits.forEach(unit => {
+        const card = document.createElement('div');
+        card.className = 'card';
+
+        const title = document.createElement('h3');
+        title.textContent = unit.name;
+
+        const description = document.createElement('p');
+        description.textContent = unit.description || 'Tidak ada deskripsi.';
+
+        const status = document.createElement('small');
+        status.textContent = unit.status.toUpperCase();
+
+        card.append(title, description, status);
+
+        card.addEventListener('click', () => {
+            showDetail(
+                unit.name,
+                unit.description || '',
+                unit.status.toUpperCase(),
+                'units'
+            );
+        });
+
+        list.appendChild(card);
+    });
+}
+
+function renderStaff() {
+    const list = document.getElementById('staffList');
+
+    if(!aiStaff.length) {
+        list.innerHTML = '<div class="empty">Data AI Staff belum tersedia.</div>';
+        return;
+    }
+
+    list.innerHTML = '';
+
+    aiStaff.forEach(staff => {
+        const card = document.createElement('div');
+        card.className = 'card';
+
+        const title = document.createElement('h3');
+        title.textContent = staff.name;
+
+        const description = document.createElement('p');
+        description.textContent = staff.role + ' · ' + (staff.department || 'Unassigned');
+
+        const status = document.createElement('small');
+        status.textContent = (staff.status + ' · ' + staff.connection_type).toUpperCase();
+
+        card.append(title, description, status);
+
+        card.addEventListener('click', () => {
+            showDetail(
+                staff.name,
+                staff.role + ' · ' + (staff.department || 'Unassigned'),
+                (staff.status + ' · ' + staff.connection_type).toUpperCase(),
+                'staff'
+            );
+        });
+
+        list.appendChild(card);
+    });
+}
+
+/* TASK MANAGEMENT - LOCAL STORAGE */
 let tasks = [];
+
 try {
     tasks = JSON.parse(localStorage.getItem('nalara_tasks') || '[]');
+    if(!Array.isArray(tasks)) tasks = [];
 } catch(e) {
     tasks = [];
 }
@@ -311,6 +438,7 @@ function renderTasks() {
     }
 
     list.innerHTML = '';
+
     tasks.forEach((task,index) => {
         const card = document.createElement('div');
         card.className = 'card task' + (task.done ? ' done' : '');
@@ -318,6 +446,7 @@ function renderTasks() {
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.checked = task.done;
+
         checkbox.addEventListener('change', () => {
             tasks[index].done = checkbox.checked;
             saveTasks();
@@ -346,12 +475,18 @@ document.getElementById('taskForm').addEventListener('submit', function(e) {
 
     if(!title) return;
 
-    tasks.push({title,unit,done:false});
+    tasks.push({
+        title,
+        unit,
+        done:false
+    });
+
     this.reset();
     saveTasks();
 });
 
 renderTasks();
+loadBackendData();
 </script>
 
 </body>
